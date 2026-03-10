@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RecipiAI</title>
+<style>
+  body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    background: url('https://images.pexels.com/photos/616401/pexels-photo-616401.jpeg?cs=srgb&dl=pexels-goumbik-616401.jpg&fm=jpg') no-repeat center center fixed;
+    background-size: cover;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  header {
+    text-align: center;
+    padding: 4em 1em 1em;
+    color: white;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: 3em;
+  }
+
+  .content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px 10px;
+    flex: 1;
+  }
+
+  /* Search form */
+  .search-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+    justify-content: center;
+  }
+
+  .search-form input {
+    padding: 12px;
+    width: 60%;
+    min-width: 150px;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+  }
+
+  .search-form button {
+    padding: 12px 20px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+
+  .search-form select {
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+  }
+
+  /* Recipe cards */
+  .recipe-card {
+    background: rgba(255,255,255,0.9);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+  .recipe-card img {
+    width: 100%;
+    border-radius: 12px;
+    margin: 10px 0;
+  }
+
+  .veg-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: #4CAF50;
+    color: white;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  .nonveg-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: #f44336;
+    color: white;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 15px 10px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    font-size: 14px;
+    margin-top: auto;
+  }
+
+  footer a {
+    color: #4CAF50;
+    text-decoration: none;
+  }
+
+  footer a:hover {
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>RecipiAI: From your pantry to your plate!</h1>
+</header>
+
+<div class="content">
+  <form id="ingredient-form" class="search-form">
+    <input type="text" id="ingredients" placeholder="Enter ingredients..." required>
+    <button type="submit">Get Recipes</button>
+    <select id="filter" onchange="filterRecipes()">
+      <option value="all">All</option>
+      <option value="veg">Vegetarian</option>
+      <option value="nonveg">Non-Vegetarian</option>
+    </select>
+  </form>
+
+  <div id="recipes-container"></div>
+</div>
+
+<footer>
+  &copy; 2025 RecipiAI. All rights reserved. | Built with ❤️ by 
+  <a href="https://www.linkedin.com/in/manasvi-singh-97b509287" target="_blank">Manasvi Singh</a>
+</footer>
+
+
+<script>
+  document.getElementById('ingredient-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const ingredients = document.getElementById('ingredients').value.trim();
+    if(!ingredients) return;
+
+    const container = document.getElementById('recipes-container');
+    container.innerHTML = '<p>Loading recipes...</p>';
+
+    try {
+      const response = await fetch('/api/get-recipes', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ingredients})
+      });
+      const data = await response.json();
+      localStorage.setItem('recipes', JSON.stringify(data.recipes));
+      displayRecipes(data.recipes);
+    } catch(err) {
+      console.error(err);
+      container.innerHTML = '<p>Error loading recipes.</p>';
+    }
+  });
+
+  function displayRecipes(recipes){
+    const container = document.getElementById('recipes-container');
+    container.innerHTML = '';
+    if(!recipes || recipes.length === 0){
+      container.innerHTML = '<p>No recipes found.</p>';
+      return;
+    }
+
+    recipes.forEach(recipe => {
+      const card = document.createElement('div');
+      card.className = 'recipe-card';
+      card.innerHTML = `
+        <div class="${recipe.isVegetarian ? 'veg-tag' : 'nonveg-tag'}">
+          ${recipe.isVegetarian ? 'Vegetarian' : 'Non-Vegetarian'}
+        </div>
+        <h2>${recipe.title}</h2>
+        <img src="${recipe.image}" alt="${recipe.title}">
+        <p><strong>Calories:</strong> ${recipe.calories || recipe.nutrition.calories || 'N/A'}</p>
+        <p><strong>Rating:</strong> ${recipe.rating || 'N/A'} ⭐</p>
+        <p><strong>Protein:</strong> ${recipe.nutrition.protein || 'N/A'} g</p>
+        <p><strong>Fat:</strong> ${recipe.nutrition.fat || 'N/A'} g</p>
+        <p><strong>Carbs:</strong> ${recipe.nutrition.carbs || 'N/A'} g</p>
+        <h3>Instructions:</h3>
+        <p>${recipe.instructions || 'No instructions available.'}</p>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function filterRecipes(){
+    const filter = document.getElementById('filter').value;
+    const allRecipes = JSON.parse(localStorage.getItem('recipes')) || [];
+    let filtered = allRecipes;
+    if(filter==='veg') filtered = allRecipes.filter(r => r.isVegetarian);
+    else if(filter==='nonveg') filtered = allRecipes.filter(r => !r.isVegetarian);
+    displayRecipes(filtered);
+  }
+</script>
+
+</body>
+</html>
