@@ -14,7 +14,11 @@ app.use(cors());
 app.get('/', (req, res) => {
     res.send("RecipeAI backend running on EC2");
 });
-
+app.get("/api", (req, res) => {
+  res.json({
+    message: "RecipeAI API working successfully"
+  });
+});
 
 // =============================
 // Get recipes based on ingredients
